@@ -7,7 +7,6 @@
 #include <EEPROM.h>
 #include <LITTLEFS.h>
 #include "LittleFSsupport.h"
-// #include <wifidata.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////
 #define DEBUG 0
@@ -229,22 +228,6 @@ void handleFactoryReset(String message) {
     }
 }
 
-// Initialize WiFi
-// void initWiFi() {
-//   WiFi.mode(WIFI_STA);
-//   WiFi.hostname(Server_Name);
-//   WiFi.begin(ssid, password); 
-//   delay(5000);
-//   while (WiFi.status() != WL_CONNECTED)
-//   {
-//     Serial.print(".");
-//     delay(1000);
-//   }
-//   Serial.println("");
-//   Serial.print("WiFi connected .. ");
-//   Serial.print("Blinds IP address: ");
-//   Serial.println(WiFi.localIP());
-// }
 
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
@@ -387,7 +370,6 @@ void setup() {
   initFS();
 
   // Serial.println( "connecting to WIFI...");
-  // initWiFi();
   cp.initWifiPortal("JRBlinds","jrblindsGuest");
 
   server.serveStatic("/", LittleFS, "/");  
