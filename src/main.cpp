@@ -87,7 +87,9 @@ void notifyClients( int x = 1){
   delay(5*x);
   
 }
-
+void notifyLog( String message){
+  ws.textAll("LOG :"+ message);
+}
 void notifyError(AsyncWebSocketClient *client, String message){
   client->text( message);
   client->close(1000, "Good bye");
@@ -319,10 +321,11 @@ void serverSetup() {
 void handleIntensityButtonPress() {
     
     // Check for intensity button press
-    if (digitalRead(intensityButton) == HIGH) {
+    if (digitalRead(intensityButton) == LOW ) {
       // Button pressed, handle the press
       if (!intensityButtonPressed) {
         if (DEBUG) Serial.println(" Intensity Button pressed ");
+        else notifyLog( " Intensity Button Pressed");
         if (C1.isBlindOpen()) C1.closeBlinds();
         else if ( !C1.isBlindOpen()) C1.openBlinds();
       }
@@ -330,11 +333,12 @@ void handleIntensityButtonPress() {
       
     } else if (intensityButtonPressed) {
       // Button released, handle the releas
+      notifyLog( " Intensity Button released");
       intensityButtonPressed = false;
       C1.ifRunningHalt();
       notifyClients(10);
       // reverse the blinds status open -> close or close -> open
-    }
+    } 
 }
 
 // handleOnOffButtonPress:
@@ -344,22 +348,25 @@ void handleIntensityButtonPress() {
 void handleOnOffButtonPress(){
   int currpos;
   currentState = digitalRead(onOffButton);
-  if (currentState == HIGH){
-      Serial.println(" handleOnoffButtonPress..");
+  if (currentState == LOW){
+      if (DEBUG) Serial.println(" handleOnoffButtonPress..");
+      else notifyLog( " OnOff Button Pressed");
       pressedTime = millis();
       // Button pressed
       // Wait for button release
-      while (digitalRead(onOffButton) == HIGH) {
+      while (digitalRead(onOffButton) == LOW) {
           delay(10);
       }
       pressDuration = millis() - pressedTime;
       if (pressDuration >= LONG_PRESS_TIME){
         //call for setting upper or lower limit;
+        notifyLog(" Long Press ...");
         currpos = C1.ifRunningHalt();
         if (C1.isBlindOpen() ) C1.setWindowMax(currpos);
         else if (!C1.isBlindOpen() ) C1.setWindowLow(currpos);
         notifyClients(30);
       } else {
+        notifyLog(" Short Press ...");
         if ( C1.isBlindOpen() ) C1.closeBlinds();
         else C1.openBlinds();
       }
@@ -391,24 +398,24 @@ void setup() {
   // setup the pins of ESP01;  
   pinMode(dirPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
-  // pinMode(onOffButton, FUNCTION_3);
+  pinMode(onOffButton, FUNCTION_3);
   pinMode(intensityButton, FUNCTION_3);
-  // pinMode(onOffButton, INPUT);
-  pinMode(intensityButton, INPUT);
+  pinMode(onOffButton, INPUT_PULLUP);
+  pinMode(intensityButton, INPUT_PULLUP);
 
   //////////////////////////////////////////////////////////////
   // Set outputs to LOW
   digitalWrite(dirPin, LOW);
   digitalWrite(stepPin, LOW);
-  // digitalWrite(onOffButton, LOW);
-  // digitalWrite(intensityButton, LOW);
-  analogWrite(intensityButton,0);
+  digitalWrite(onOffButton, HIGH);
+  digitalWrite(intensityButton, HIGH);
+  // analogWrite(intensityButton,0);
 }
 
 void loop(){
 
     // Check for open button press
-    // handleOnOffButtonPress();
+    handleOnOffButtonPress();
 
     // check if intensity button pressed
     handleIntensityButtonPress();
@@ -421,4 +428,7 @@ void loop(){
       ws.cleanupClients();
     }
     delayMicroseconds(500);
+
+    // digitalWrite(onOffButton, LOW);
+    // digitalWrite(intensityButton,LOW);
 }
