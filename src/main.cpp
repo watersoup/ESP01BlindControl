@@ -7,11 +7,12 @@
 #include <EEPROM.h>
 #include <LITTLEFS.h>
 #include "LittleFSsupport.h"
-#include <wifidata.h>
+// #include <wifidata.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////
 #define DEBUG 0
 #include <BlindsObj.h>
+#include <CPhandler.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CLOSEBLINDS 0
@@ -26,6 +27,8 @@ String Server_Name = "JRBlinds";
 // ESP8266WebServer  server(80);
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+DNSServer dns;
+CaptiveRequestHandler cp(&server, &dns);
 
 // Assign output variables to GPIO pins
 const int stepPin = 0; //GPIO0
@@ -227,21 +230,21 @@ void handleFactoryReset(String message) {
 }
 
 // Initialize WiFi
-void initWiFi() {
-  WiFi.mode(WIFI_STA);
-  WiFi.hostname(Server_Name);
-  WiFi.begin(ssid, password); 
-  delay(5000);
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(1000);
-  }
-  Serial.println("");
-  Serial.print("WiFi connected .. ");
-  Serial.print("Blinds IP address: ");
-  Serial.println(WiFi.localIP());
-}
+// void initWiFi() {
+//   WiFi.mode(WIFI_STA);
+//   WiFi.hostname(Server_Name);
+//   WiFi.begin(ssid, password); 
+//   delay(5000);
+//   while (WiFi.status() != WL_CONNECTED)
+//   {
+//     Serial.print(".");
+//     delay(1000);
+//   }
+//   Serial.println("");
+//   Serial.print("WiFi connected .. ");
+//   Serial.print("Blinds IP address: ");
+//   Serial.println(WiFi.localIP());
+// }
 
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
@@ -335,7 +338,7 @@ void handleIntensityButtonPress() {
       // Button released, handle the releas
       notifyLog( " Intensity Button released");
       intensityButtonPressed = false;
-      C1.ifRunningHalt();
+      C1.ifRunningStop();
       notifyClients(10);
       // reverse the blinds status open -> close or close -> open
     } 
@@ -384,8 +387,8 @@ void setup() {
   initFS();
 
   // Serial.println( "connecting to WIFI...");
-  initWiFi();
-  // cp.initWifiPortal("JRBlinds","jrblindsGuest");
+  // initWiFi();
+  cp.initWifiPortal("JRBlinds","jrblindsGuest");
 
   server.serveStatic("/", LittleFS, "/");  
 
@@ -429,6 +432,5 @@ void loop(){
     }
     delayMicroseconds(500);
 
-    // digitalWrite(onOffButton, LOW);
-    // digitalWrite(intensityButton,LOW);
+
 }
