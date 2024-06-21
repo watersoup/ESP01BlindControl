@@ -32,9 +32,10 @@ CaptiveRequestHandler cp(&server, &dns);
 // Assign output variables to GPIO pins
 const int stepPin = 0; //GPIO0
 const int dirPin = 2; // GPIO02
-const int intensityButton = 3 ; // RX Pin; is going to be setup button
+const int onOffButton=1; // RX pin; I cannot make use intensity Pin if it runs on Battery;
+const int intensityButton = 14 ; // 14 just a place holder RX Pin; incase if we solder the wire
                           // if you hold it down longer then 3 sec;
-const int onOffButton = 1; // Tx pin get activate once we close Serial 
+const int enablePin = 3; // Tx pin get activate once we close Serial 
 
 unsigned long lastUpdateTime = millis();
 unsigned long updateInterval = 9000; // upto 5 seconcds;
@@ -116,7 +117,7 @@ void handleSetupClick(AsyncWebSocketClient *client, String message){
   if(DEBUG) Serial.println( "handleSetupClick " + String(buttonStatus));
 
   long int slidervalue = -1;
-  if (C1.getLimitFlag() != 3){
+  if (C1.getLimitFlag() < 3){
   
   currpos = C1.ifRunningHalt();
 
@@ -307,7 +308,7 @@ void serverSetup() {
 void handleIntensityButtonPress() {
     
     // Check for intensity button press
-    if (digitalRead(intensityButton) == LOW ) {
+    if (digitalRead(intensityButton) == LOW  && (C1.getLimitFlag() == 3 ) ) {
       // Button pressed, handle the press
       if (!intensityButtonPressed) {
         if (DEBUG) Serial.println(" Intensity Button pressed ");
@@ -334,6 +335,7 @@ void handleIntensityButtonPress() {
 void handleOnOffButtonPress(){
   int currpos;
   currentState = digitalRead(onOffButton);
+  int limitcts = C1.getLimitFlag();
   if (currentState == LOW){
       if (DEBUG) Serial.println(" handleOnoffButtonPress..");
       else notifyLog( " OnOff Button Pressed");
@@ -347,9 +349,13 @@ void handleOnOffButtonPress(){
       if (pressDuration >= LONG_PRESS_TIME){
         //call for setting upper or lower limit;
         notifyLog(" Long Press ...");
-        currpos = C1.ifRunningHalt();
-        if (C1.isBlindOpen() ) C1.setWindowMax(currpos);
-        else if (!C1.isBlindOpen() ) C1.setWindowLow(currpos);
+        if (limitcts < 3) {
+          currpos = C1.ifRunningHalt();
+          if ( (limitcts != 2) && C1.isBlindOpen() ) C1.setWindowMax(currpos);
+          else if (!C1.isBlindOpen() && (limitcts !=1 )) C1.setWindowLow(currpos);
+        } else {
+          notifyLog(" Limits already set..");
+        }
         notifyClients(30);
       } else {
         notifyLog(" Short Press ...");
@@ -363,9 +369,6 @@ void setup() {
   
   // Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
 
-  // initialize the motor to be used;
-
-  C1 = BlindsObj(1, stepPin, dirPin);
   // Mount the file system
   initFS();
 
@@ -385,8 +388,14 @@ void setup() {
   pinMode(stepPin, OUTPUT);
   pinMode(onOffButton, FUNCTION_3);
   pinMode(intensityButton, FUNCTION_3);
+  pinMode(enablePin, FUNCTION_3);
   pinMode(onOffButton, INPUT_PULLUP);
   pinMode(intensityButton, INPUT_PULLUP);
+  pinMode(enablePin, OUTPUT);
+
+
+  // initialize the motor to be used;
+  C1 = BlindsObj(1, stepPin, dirPin, enablePin);
 
   //////////////////////////////////////////////////////////////
   // Set outputs to LOW
@@ -394,7 +403,6 @@ void setup() {
   digitalWrite(stepPin, LOW);
   digitalWrite(onOffButton, HIGH);
   digitalWrite(intensityButton, HIGH);
-  // analogWrite(intensityButton,0);
 }
 
 void loop(){

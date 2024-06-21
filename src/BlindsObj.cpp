@@ -5,10 +5,17 @@ BlindsObj::BlindsObj(){
 
 }
 // Constructor for BlindsObj
-BlindsObj::BlindsObj(int type, int stepPin, int dirPin){
+BlindsObj::BlindsObj(int type, int stepPin, int dirPin, int enablePin){
     if(DEBUG) Serial.println(" Initializing the Blinds Object ...");
-    motor = AccelStepper(type, stepPin, dirPin);
-    motor.setPinsInverted(false,false, true); // not sure if useful
+    if (enablePin != 0){
+      motor = AccelStepper(type, stepPin, dirPin);
+      // THIS IS TRUE FOR DRIVER A4988
+      motor.setEnablePin(enablePin);
+      motor.setPinsInverted(false,false, true); // not sure if useful
+    }
+    else{
+      motor = AccelStepper(type, stepPin, dirPin);
+    }
     motor.setAcceleration(ACCEL);
     motor.setSpeed(SPEED);
     motor.setMaxSpeed(MAXSPEED);
@@ -31,7 +38,14 @@ BlindsObj::BlindsObj(int type, int stepPin, int dirPin){
       if (DEBUG) Serial.println("EEPROM  NO values stored");
       //initiate theEEPROM
     }
+    if (enablePin !=0 ) motor.disableOutputs();
 }
+
+BlindsObj::BlindsObj(int type, int stepPin, int dirPin) 
+  : BlindsObj(type, stepPin, dirPin, 0){
+    
+}
+
 
 // save slider position called pretty often;
 void BlindsObj::saveSliderPosition(){
@@ -236,6 +250,7 @@ long int BlindsObj::ifRunningStop(){
     motor.stop();
   }
   Pos = motor.currentPosition();
+  motor.disableOutputs();
   delayMicroseconds(500);
   return  Pos;
 }
@@ -251,6 +266,7 @@ long int BlindsObj::ifRunningHalt(){
   }
   setStatus("OFF");
   Pos = motor.currentPosition();
+  motor.disableOutputs();
   delayMicroseconds(500);
   return Pos;
 }
@@ -258,6 +274,7 @@ long int BlindsObj::ifRunningHalt(){
 // set the goal for the motor to move, make sure to set the updateTime.
 void BlindsObj::moveBlinds(long int Pos){
   int currpos = ifRunningHalt();
+  motor.enableOutputs();
   blindsOpenFlag = (direction*Pos) > (direction*currpos) ;
   if (blindsOpenFlag)
     motor.setSpeed((direction)*(SPEED));
@@ -265,6 +282,7 @@ void BlindsObj::moveBlinds(long int Pos){
   motor.moveTo(Pos);
   status = (blindsOpenFlag? "Open":"Close");
   updateTime  = millis();
+  
 }
 
 void BlindsObj::run(unsigned long delay=1000){
@@ -278,6 +296,7 @@ void BlindsObj::run(unsigned long delay=1000){
   } else{
       if (DEBUG && ( IterCount%10000) ==0 ) Serial.println( " stopping...");
       motor.stop();
+      motor.disableOutputs();
       setStatus("OFF");
       if (!savedFlag) {
         saveMotorParameters();
@@ -296,7 +315,8 @@ void BlindsObj::openBlinds(){
     delayMicroseconds(500);
     updateTime  = millis();
     setStatus( "Open");
-    saveMotorParameters();
+    // saveMotorParameters();
+    motor.enableOutputs();
 }
 //turn CCW
 void BlindsObj::closeBlinds(){
@@ -307,5 +327,6 @@ void BlindsObj::closeBlinds(){
     delayMicroseconds(500);
     updateTime  = millis();
     setStatus( "Close" );
+    motor.enableOutputs();
     // saveMotorParameters();
 }

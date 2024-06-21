@@ -55,6 +55,9 @@ class BlindsObj  {
 
     // Constructor for BlindsObj
     BlindsObj(int type, int stepPin, int dirPin);
+
+    // construtor for BlindsObj with EnablePin
+    BlindsObj(int type, int stepPin, int dirPin, int enablePin);
     
     // save slider position called pretty often;
     void saveSliderPosition();

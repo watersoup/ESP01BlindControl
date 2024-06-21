@@ -2,8 +2,8 @@
 const BlindsModule = (function () {
      // Private variables
     let blindName = "";
-    let blindOpenFlag = 0;
-    let limitSetupFlag = 0;
+    let blindOpenFlag = 0; // 0 - closed/closing  1 - open/opening
+    let limitSetupFlag = 0; 
     let initializationFlag = 0;
     const data = {
       status : 0
@@ -204,6 +204,7 @@ const BlindsModule = (function () {
     }
 
     // Assuming you have opened a WebSocket connection named 'socket'
+    // send limit setting info using "Set Window Limits" button
     function wsSendMomentaryToggle() {
       const data = {
         setupLimit: blindOpenFlag
