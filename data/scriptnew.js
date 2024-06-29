@@ -5,9 +5,7 @@ const BlindsModule = (function () {
     let blindOpenFlag = 0; // 0 - closed/closing  1 - open/opening
     let limitSetupFlag = 0; 
     let initializationFlag = 0;
-    const data = {
-      status : 0
-    }
+
 
     const socket = new WebSocket('ws://' + window.location.hostname + '/ws');
     // Event handler when the WebSocket connection is opened
@@ -72,25 +70,26 @@ const BlindsModule = (function () {
       console.error('WebSocket error:', event);
     });
 
-    function handleReceiveBlindsInfo(data){
+    function handleReceiveBlindsInfo(recdInfo){
       
-      if (data.status !== undefined) {
+      if (recdInfo.status !== undefined) {
         // Handle blinds status update
-        var currentstatus = toggleButton.classList.contains("off");
-        // blinds open & status here is close or vise-versa
-        // changes the status of the button on screen only
-        // if we received the changed signal;
-        if (data.status != blindOpenFlag ){
-          toggleButton.classList.toggle("off");
-          blindOpenFlag=data.status;
-          toggleButton.textContent = toggleButton.classList.contains("off") ? "Close" : "Open"; 
+        var buttonStatus =  Number(toggleButton.classList.contains("off"));
+        // if Button:red/closed & status is closed
+        // or button: Open/blue & status is Open then adjust accordingly
+        // the button status has to be opposite of blinds actual status
+        if (recdInfo.status !== buttonStatus) { 
+          toggleButton.classList.toggle('off');
+          console.log(" button: " + String(buttonStatus) + ":"+ toggleButton.textContent+ " recd. STatus: "+ String(recdInfo.status));
         }
+        toggleButton.textContent = toggleButton.classList.contains("off") ? "Close" : "Open";
+        blindOpenFlag= toggleButton.classList.contains("off") ? 1: 0;
       } 
-      if (data.limitSetupFlag !== undefined) {
+      if (recdInfo.limitSetupFlag !== undefined) {
         // Handle limit setup flag update
               // Your logic to handle limit setup flag update
         try{
-          limitSetupFlag = data.limitSetupFlag;
+          limitSetupFlag = recdInfo.limitSetupFlag;
         } catch (error) {
           // Handle JSON parsing error
           alert("Error parsing server response: " + error.message);
@@ -107,19 +106,19 @@ const BlindsModule = (function () {
         }
       }
 
-      if (data.sliderPosition !== undefined){
+      if (recdInfo.sliderPosition !== undefined){
         const slider = document.getElementById("openRangeSlider");
-        slider.value = data.sliderPosition;
+        slider.value = recdInfo.sliderPosition;
       }
 
-      if (data.blindName !== undefined){
+      if (recdInfo.blindName !== undefined){
         var containerName = document.getElementById("controlTitle").textContent;
         if (blindName=="" || containerName == "Blinds-name" ){
           document.getElementById("controlTitle").textContent = containerName;
           document.title = containerName+ " Controls";
-          toggleButton.textContent = 'Open';
+          // toggleButton.textContent = 'Open';
         }
-        blindName = data.blindName;
+        blindName = recdInfo.blindName;
       }
     }
 
@@ -237,9 +236,10 @@ const BlindsModule = (function () {
       // Toggle class 'off' to change background and text color
       toggleButton.classList.toggle("off");
       // Toggle text content between "Open"-1 and "Close"-0
-      data["status"]= toggleButton.classList.contains("off") ? 1: 0;
-      blindOpenFlag = data["status"];
-
+      blindOpenFlag= toggleButton.classList.contains("off") ? 1: 0;
+      const data = {
+        status : blindOpenFlag
+      };
       toggleButton.textContent = toggleButton.classList.contains("off") ? "Close" : "Open";
       const requestData = JSON.stringify(data)
       console.log(" status is " + requestData);
@@ -348,6 +348,8 @@ const UIModule = (function () {
   
   // Usage of the modules
   window.addEventListener('DOMContentLoaded', () => {
+    
+ 
 
       BlindsModule.firstLoad();
       // Other UI interactions...
