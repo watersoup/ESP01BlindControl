@@ -7,6 +7,7 @@
 #include <EEPROM.h>
 #include <LITTLEFS.h>
 #include "LittleFSsupport.h"
+#include <AsyncElegantOTA.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////
 #define DEBUG 0
@@ -16,12 +17,13 @@
 
 #define CLOSEBLINDS 0
 #define OPENBLINDS 1
-#define  SHORT_PRESS_TIME 500
+#define SHORT_PRESS_TIME 500
 #define LONG_PRESS_TIME 2000
-#define  MIN_PRESS_TIME 200
+#define MIN_PRESS_TIME 200
 
 //Server Name
-String Server_Name = "JRBlinds";
+const char * Server_Name = "JRBlinds";
+const char * Cap_Pass = "jrblindsGuest";
 // Set web server port number to 80
 // ESP8266WebServer  server(80);
 AsyncWebServer server(80);
@@ -179,8 +181,11 @@ void handleSetSliderValue(String message) { //GOOD
 
 void handleFirstLoad(AsyncWebServerRequest *request){
    String JSONstring = "";
+  bool reconnectFlag = false;
   if (request->hasArg("blindName") and C1.getBlindName() == ""){
     C1.setBlindName(request->arg("blindName"));
+    reconnectFlag=true;
+
     if (request->hasArg("rightSide") ){
       String direction = request->arg("rightSide");
       direction.toUpperCase();
@@ -193,9 +198,14 @@ void handleFirstLoad(AsyncWebServerRequest *request){
     JSONstring = "{\"limitSetupFlag\":"+ String( C1.getLimitFlag()) + 
                       ",\"blindName\":\"" + C1.getBlindName() +
                       "\",\"status\":" + String(blindsOpenFlag) + "}";
+
   }
   if (DEBUG) Serial.println( JSONstring);
   request->send(200, "application/json", JSONstring );  
+  if (reconnectFlag){
+  //   // rename the wifi site server to the name of the blindname
+    WiFi.hostname(C1.getBlindName());
+  }
 }
 
 // handling factory reset request with secretkey;
@@ -373,12 +383,17 @@ void setup() {
   initFS();
 
   // Serial.println( "connecting to WIFI...");
-  cp.initWifiPortal("JRBlinds","jrblindsGuest");
+  cp.initWifiPortal(Server_Name, Cap_Pass);
 
   server.serveStatic("/", LittleFS, "/");  
 
   // Add more routes if needed
   serverSetup();
+  
+  // Start ElegantOTA
+  AsyncElegantOTA.begin(&server);
+
+  // start the http Async server
   server.begin();
   // Serial.flush();
   // Serial.end();
@@ -391,7 +406,7 @@ void setup() {
   pinMode(enablePin, FUNCTION_3);
   pinMode(onOffButton, INPUT_PULLUP);
   pinMode(intensityButton, INPUT_PULLUP);
-  pinMode(enablePin, OUTPUT);
+  
 
 
   // initialize the motor to be used;

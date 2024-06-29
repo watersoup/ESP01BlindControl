@@ -36,7 +36,7 @@ body {
     margin-top: 10px;
   }
   #toggleButton {
-    background-color: #4c74af; /* Green background for 'open' */
+    background-color: #1b8644; /* Green background for 'open' */
     color: white;
     padding: 10px 20px;
     margin: 5px;
@@ -47,6 +47,10 @@ body {
     color: white;
   }
 
+  #toggleButton:not(.off) {
+    background-color: #4c74af; /* Red background for 'close' */
+    color: white;
+  }
   #momentaryButton {
     background-color: #4c90af85; /* Green background for normal state */
     color: white;

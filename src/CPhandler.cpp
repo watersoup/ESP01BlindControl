@@ -51,4 +51,6 @@ void CaptiveRequestHandler::initWifiPortal(const char * APname="",
     Serial.println(WiFi.localIP());
     //set config save notify callback
     Serial.println(" starting the file system...");
+    WiFi.hostname(APname);
+    WiFi.reconnect();
 }
